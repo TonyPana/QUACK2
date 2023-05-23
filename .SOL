@@ -1,0 +1,42 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+
+contract QUACKToken is ERC20, Ownable {
+    address private constant INITIAL_SUPPLY_ADDRESS = 0xbA56EC3927e58FaAD10416e5EE5d5e55926F76E4;
+    uint256 private constant MAX_SUPPLY = 1000000000 * 10**18;
+
+    constructor() ERC20("QUACK", "QUACK") {
+        _mint(INITIAL_SUPPLY_ADDRESS, MAX_SUPPLY);
+    }
+
+    function burn(uint256 amount) external {
+        _burn(msg.sender, amount);
+    }
+
+    function mint(address to, uint256 amount) external onlyOwner {
+        require(totalSupply() + amount <= MAX_SUPPLY, "Exceeds max supply");
+        _mint(to, amount);
+    }
+
+    function _transfer(
+        address sender,
+        address recipient,
+        uint256 amount
+    ) internal virtual override {
+        if (amount > 0) {
+            uint256 deflationFee = amount / 1000; // 0.1% of the transaction amount
+            uint256 transferAmount = amount - deflationFee;
+
+            if (deflationFee > 0) {
+                _burn(sender, deflationFee);
+            }
+
+            super._transfer(sender, recipient, transferAmount);
+        } else {
+            super._transfer(sender, recipient, amount);
+        }
+    }
+}
